@@ -19,6 +19,7 @@ has Engine => (
           put_worker
           kill_worker
           get_worker
+          get_worker_ids
           )
     ],
 );

@@ -51,6 +51,7 @@ has workers => (
         remove_worker => 'delete',
         has_workers   => 'count',
         num_workers   => 'count',
+        get_worker_ids => 'keys',
     },
 );
 
@@ -88,6 +89,7 @@ has session => (
                       _worker_done
                       _worker_started
                       _sig_child
+                      _sig_term
                       add_worker
                       _kill_worker
                       )
@@ -116,7 +118,8 @@ sub put_worker {
 
 sub kill_worker {
     my ( $self, $wheel_id ) = splice @_, 0, 2;
-    $self->get_wheel($wheel_id)->kill(@_);
+    $self->get_worker($wheel_id)->kill(@_);
+    $self->remove_worker($wheel_id);
 }
 
 #
@@ -156,7 +159,7 @@ sub add_worker {
         CloseEvent  => '_worker_done',
     );
     $kernel->sig_child($wheel->PID, "_sig_child");
-
+ 
     $self->set_worker( $wheel->ID => $wheel );
     $self->set_process( $wheel->PID => $wheel->ID );
     if ( blessed($job) && $job->isa('MooseX::Workers::Job') ) {
@@ -184,6 +187,8 @@ sub _start {
     my ($self) = $_[OBJECT];
     $self->visitor->worker_manager_start()
       if $self->visitor->can('worker_manager_start');
+
+    $_[KERNEL]->sig( TERM => '_sig_term' ); # PJM
 }
 
 sub _stop {
@@ -197,6 +202,15 @@ sub _sig_child {
     my ($self) = $_[OBJECT];
     $self->visitor->sig_child( $self->get_process($_[ARG1]), $_[ARG2] )
       if $self->visitor->can('sig_child');
+    $self->remove_process( $_[ARG1] );
+    $_[KERNEL]->sig_handled();
+}
+
+sub _sig_term {
+    my ($self) = $_[OBJECT];
+
+    $self->visitor->sig_term( )
+      if $self->visitor->can('sig_term');
     $self->remove_process( $_[ARG1] );
     $_[KERNEL]->sig_handled();
 }
