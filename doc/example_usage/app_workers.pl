@@ -70,8 +70,8 @@ sub _kill_workers {
     my @keys = $self->get_worker_ids;
 
     foreach my $wheel_id ( @keys ) {
-	warn "going to kill_worker($wheel_id)\n";
-	$self->kill_worker($wheel_id);
+        warn "going to kill_worker($wheel_id)\n";
+        $self->kill_worker($wheel_id);
     }
  
 }
